@@ -24,21 +24,21 @@ The connection can be specified with one (and only one) of:
 Sample catbox cache initialization:
 
 ```js
-const Catbox = require('@hapi/catbox');
-const CatboxSequelize = require('catbox-sequelize');
+const Catbox = require('@hapi/catbox')
+const CatboxSequelize = require('catbox-sequelize')
 
 
 const cache = new Catbox.Client(CatboxRedis, {
   partition : 'my_catbox_cache'
   url: 'postgres://user:pass@example.com:5432/dbname'
-});
+})
 ```
 
 When used in a hapi server (hapi version 18 or newer):
 
 ```js
 const Hapi = require('hapi')
-const CatboxSequelize = require('catbox-sequelize');
+const CatboxSequelize = require('catbox-sequelize')
 
 const server = new Hapi.Server({
   cache: [
@@ -52,3 +52,9 @@ const server = new Hapi.Server({
   ]
 })
 ```
+
+## Tests
+
+The test suite expects a postgresql server on the standart port with a database named catbox owned by a user catbox with the password catbox
+
+To set it up locally, run `npm run db`

@@ -7,7 +7,7 @@ const Hapi = require('@hapi/hapi')
 const Hoek = require('@hapi/hoek')
 const Lab = require('@hapi/lab')
 
-const DB = 'postgres://maciej:test@localhost/catbox'
+const DB = 'postgres://catbox:catbox@localhost/catbox'
 const Sequelize = require('sequelize')
 
 const { it, describe } = exports.lab = Lab.script()

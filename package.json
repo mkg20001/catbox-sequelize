@@ -24,7 +24,7 @@
   "scripts": {
     "test": "lab -t 100 -a @hapi/code -m 15000",
     "test-cov-html": "lab -r html -o coverage.html -a @hapi/code",
-    "db": "psql -c 'DROP DATABASE catbox;'; psql -c 'CREATE DATABASE catbox;'"
+    "db": "psql -c 'DROP DATABASE catbox;'; psql -c 'DROP ROLE catbox;'; psql -c \"CREATE ROLE catbox; ALTER ROLE catbox WITH login; ALTER USER catbox WITH PASSWORD 'catbox'\"; psql -c 'CREATE DATABASE catbox;'; psql -c 'ALTER DATABASE catbox OWNER TO catbox;'"
   },
   "license": "BSD-3-Clause",
   "directories": {

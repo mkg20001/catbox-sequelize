@@ -1,0 +1,27 @@
+language: node_js
+
+node_js:
+  - "8"
+  - "10"
+  - "12"
+  - "node"
+
+sudo: false
+
+install:
+  - "npm install"
+  - "npm install @hapi/hapi@$HAPI_VERSION"
+
+env:
+  - HAPI_VERSION="18"
+
+os:
+  - "linux"
+
+services:
+  - postgresql
+  - docker
+
+before_script:
+  - su postgres -c "npm run db"
+  - sleep 2
