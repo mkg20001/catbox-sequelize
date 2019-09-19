@@ -1,0 +1,26 @@
+{
+  "name": "catbox-sequelize",
+  "description": "Sequelize adapter for catbox",
+  "version": "0.0.1",
+  "main": "lib/index.js",
+  "keywords": [
+    "cache",
+    "catbox",
+    "redis"
+  ],
+  "dependencies": {
+    "@hapi/hoek": "8.x.x",
+    "@hapi/joi": "16.x.x"
+  },
+  "devDependencies": {
+    "@hapi/catbox": "10.x.x",
+    "@hapi/code": "6.x.x",
+    "@hapi/hapi": "18.x.x",
+    "@hapi/lab": "20.x.x"
+  },
+  "scripts": {
+    "test": "lab -t 100 -a @hapi/code -L -m 15000",
+    "test-cov-html": "lab -r html -o coverage.html -a @hapi/code -L"
+  },
+  "license": "BSD-3-Clause"
+}
