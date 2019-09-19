@@ -22,5 +22,18 @@
     "test": "lab -t 100 -a @hapi/code -L -m 15000",
     "test-cov-html": "lab -r html -o coverage.html -a @hapi/code -L"
   },
-  "license": "BSD-3-Clause"
+  "license": "BSD-3-Clause",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkg20001/catbox-sequelize.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/mkg20001/catbox-sequelize/issues"
+  },
+  "homepage": "https://github.com/mkg20001/catbox-sequelize#readme"
 }
