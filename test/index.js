@@ -28,7 +28,7 @@ describe('hapi', () => {
     }
   }
 
-  it('uses sequelize server for caching', async () => {
+  it('uses sequelize URL for caching', async () => {
     const server = Hapi.server({
       cache: config({
         url: DB,
@@ -54,8 +54,8 @@ describe('hapi', () => {
     })
 
     const cache = server.cache({ segment: 'test', expiresIn: 1000 })
-    await server.initialize()
     await sequelize.sync()
+    await server.initialize()
 
     await cache.set('a', 'going in')
     expect(await cache.get('a')).to.equal('going in')
@@ -64,13 +64,13 @@ describe('hapi', () => {
 
 describe('Connection', () => {
   it('creates a new connection', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
     expect(client.isReady()).to.equal(true)
   })
 
   it('closes the connection', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
     expect(client.isReady()).to.equal(true)
     await client.stop()
@@ -78,7 +78,7 @@ describe('Connection', () => {
   })
 
   it('gets an item after setting it', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     const key = { id: 'x', segment: 'test' }
@@ -89,7 +89,7 @@ describe('Connection', () => {
   })
 
   it('fails setting an item circular references', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
     const key = { id: 'x', segment: 'test' }
     const value = { a: 1 }
@@ -100,7 +100,7 @@ describe('Connection', () => {
 
   it('ignored starting a connection twice on same event', () => {
     return new Promise((resolve, reject) => {
-      const client = new Catbox.Client(CatboxSequelize)
+      const client = new Catbox.Client(CatboxSequelize, {url: DB})
       let x = 2
       const start = async () => {
         await client.start()
@@ -117,7 +117,7 @@ describe('Connection', () => {
   })
 
   it('ignored starting a connection twice chained', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
 
     await client.start()
     expect(client.isReady()).to.equal(true)
@@ -127,7 +127,7 @@ describe('Connection', () => {
   })
 
   it('returns not found on get when using null key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     const result = await client.get(null)
@@ -136,7 +136,7 @@ describe('Connection', () => {
   })
 
   it('returns not found on get when item expired', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     const key = { id: 'x', segment: 'test' }
@@ -148,49 +148,49 @@ describe('Connection', () => {
   })
 
   it('errors on set when using null key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     await expect(client.set(null, {}, 1000)).to.reject()
   })
 
   it('errors on get when using invalid key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     await expect(client.get({})).to.reject()
   })
 
   it('errors on drop when using invalid key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     await expect(client.drop({})).to.reject()
   })
 
   it('errors on set when using invalid key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     await expect(client.set({}, {}, 1000)).to.reject()
   })
 
   it('ignores set when using non-positive ttl value', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
     const key = { id: 'x', segment: 'test' }
     await client.set(key, 'y', 0)
   })
 
   it('errors on drop when using null key', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.start()
 
     await expect(client.drop(null)).to.reject()
   })
 
   it('errors on get when stopped', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.stop()
 
     const key = { id: 'x', segment: 'test' }
@@ -198,7 +198,7 @@ describe('Connection', () => {
   })
 
   it('errors on set when stopped', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.stop()
 
     const key = { id: 'x', segment: 'test' }
@@ -206,7 +206,7 @@ describe('Connection', () => {
   })
 
   it('errors on drop when stopped', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.stop()
 
     const key = { id: 'x', segment: 'test' }
@@ -223,7 +223,7 @@ describe('Connection', () => {
       expiresIn: 50000
     }
     const fn = () => {
-      const client = new Catbox.Client(CatboxSequelize)
+      const client = new Catbox.Client(CatboxSequelize, {url: DB})
       new Catbox.Policy(config, client, '')
     }
 
@@ -235,7 +235,7 @@ describe('Connection', () => {
       expiresIn: 50000
     }
     const fn = () => {
-      const client = new Catbox.Client(CatboxSequelize)
+      const client = new Catbox.Client(CatboxSequelize, {url: DB})
       new Catbox.Policy(config, client, 'a\0b')
     }
 
@@ -243,7 +243,7 @@ describe('Connection', () => {
   })
 
   it('errors when cache item dropped while stopped', async () => {
-    const client = new Catbox.Client(CatboxSequelize)
+    const client = new Catbox.Client(CatboxSequelize, {url: DB})
     await client.stop()
 
     await expect(client.drop('a')).to.reject()
@@ -731,7 +731,7 @@ describe('Connection', () => {
         segment: 'baz'
       }
 
-      expect(sequelize.generateKey(key)).to.equal('foo:baz:bar')
+      expect(sequelize.generateKey(key)).to.equal('baz:bar')
     })
 
     it('generates the storage key from a given catbox key without partition', () => {
