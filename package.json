@@ -10,13 +10,16 @@
   ],
   "dependencies": {
     "@hapi/hoek": "8.x.x",
-    "@hapi/joi": "16.x.x"
+    "@hapi/joi": "16.x.x",
+    "sequelize": "^5.19.0"
   },
   "devDependencies": {
     "@hapi/catbox": "10.x.x",
     "@hapi/code": "6.x.x",
     "@hapi/hapi": "18.x.x",
-    "@hapi/lab": "20.x.x"
+    "@hapi/lab": "20.x.x",
+    "pg": "^7.12.1",
+    "pg-hstore": "^2.3.3"
   },
   "scripts": {
     "test": "lab -t 100 -a @hapi/code -L -m 15000",
