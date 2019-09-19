@@ -252,35 +252,32 @@ describe('Connection', () => {
   describe('start()', () => {
     it('sets client to when the connection succeeds', async () => {
       const options = {
-        host: '127.0.0.1',
-        port: 6379
+        url: DB
       }
 
       const sequelize = new CatboxSequelize(options)
 
       await sequelize.start()
-      expect(sequelize.client).to.exist()
+      expect(sequelize.sequelize).to.exist()
     })
 
     it('reuses the client when a connection is already started', async () => {
       const options = {
-        host: '127.0.0.1',
-        port: 6379
+        url: DB
       }
 
       const sequelize = new CatboxSequelize(options)
 
       await sequelize.start()
-      const client = sequelize.client
+      const client = sequelize.sequelize
 
       await sequelize.start()
-      expect(client).to.equal(sequelize.client)
+      expect(client).to.equal(sequelize.sequelize)
     })
 
     it('returns an error when connection fails', async () => {
       const options = {
-        host: '127.0.0.1',
-        port: 6380
+        url: 'postgres://test:test@127.0.0.1:6800/test'
       }
 
       const sequelize = new CatboxSequelize(options)
@@ -290,32 +287,9 @@ describe('Connection', () => {
       expect(sequelize.client).to.not.exist()
     })
 
-    it('sends auth command when password is provided', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        password: 'wrongpassword'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      const warn = console.warn
-      let consoleMessage = ''
-      console.warn = function (message) {
-        consoleMessage += message
-      }
-
-      await sequelize.start()
-
-      console.warn = warn
-      expect(consoleMessage).to.contain('Sequelize server does not require a password, but a password was supplied')
-    })
-
     it('fails in error when auth is not correct', async () => {
       const options = {
-        host: '127.0.0.1',
-        port: 6378,
-        password: 'foo'
+        url: 'postgres://not:valid@localhost/test'
       }
 
       const sequelize = new CatboxSequelize(options)
@@ -327,33 +301,7 @@ describe('Connection', () => {
 
     it('success when auth is correct', async () => {
       const options = {
-        host: '127.0.0.1',
-        port: 6378,
-        password: 'secret'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-    })
-
-    it('sends select command when database is provided', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        database: 1
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-    })
-
-    it('connects to a unix domain socket when one is provided', async () => {
-      const options = {
-        socket: '/tmp/sequelize.sock'
+        url: DB
       }
 
       const sequelize = new CatboxSequelize(options)
@@ -364,7 +312,7 @@ describe('Connection', () => {
 
     it('connects via a Sequelize URL when one is provided', async () => {
       const options = {
-        url: 'sequelize://127.0.0.1:6379'
+        url: DB
       }
 
       const sequelize = new CatboxSequelize(options)
@@ -373,394 +321,274 @@ describe('Connection', () => {
       expect(sequelize.client).to.exist()
     })
 
-    describe('', () => {
-      it('connects to a sentinel cluster', async () => {
-        const sentinel = new Mock(27379, (argv) => {
-          if (argv[0] === 'sentinel' && argv[1] === 'get-master-addr-by-name') {
-            return ['127.0.0.1', '6379']
-          }
-        })
-
-        sentinel.once('connect', () => {
-          sentinel.disconnect()
-        })
-
+    describe('isReady()', () => {
+      it('returns true when when connected', async () => {
         const options = {
-          sentinels: [
-            {
-              host: '127.0.0.1',
-              port: 27379
-            },
-            {
-              host: '127.0.0.2',
-              port: 27379
-            }
-          ],
-          sentinelName: 'mymaster'
+          url: DB
         }
 
         const sequelize = new CatboxSequelize(options)
 
         await sequelize.start()
-        const client = sequelize.client
-        expect(client).to.exist()
-        expect(client.connector.options.sentinels).to.equal(options.sentinels)
-        expect(client.connector.options.name).to.equal(options.sentinelName)
+        expect(sequelize.client).to.exist()
+        expect(sequelize.isReady()).to.equal(true)
+        await sequelize.stop()
+      })
+
+      it('returns false when stopped', async () => {
+        const options = {
+          url: DB
+        }
+
+        const sequelize = new CatboxSequelize(options)
+
+        await sequelize.start()
+        expect(sequelize.client).to.exist()
+        expect(sequelize.isReady()).to.equal(true)
+        await sequelize.stop()
+        expect(sequelize.isReady()).to.equal(false)
       })
     })
 
-    it('does not stops the client on error post connection', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-
-      sequelize.client.emit('error', new Error('injected'))
-      expect(sequelize.client).to.exist()
-    })
-  })
-
-  describe('isReady()', () => {
-    it('returns true when when connected', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-      expect(sequelize.isReady()).to.equal(true)
-      await sequelize.stop()
-    })
-
-    it('returns false when stopped', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-      expect(sequelize.isReady()).to.equal(true)
-      await sequelize.stop()
-      expect(sequelize.isReady()).to.equal(false)
-    })
-  })
-
-  describe('validateSegmentName()', () => {
-    it('returns an error when the name is empty', () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      const result = sequelize.validateSegmentName('')
-
-      expect(result).to.be.instanceOf(Error)
-      expect(result.message).to.equal('Empty string')
-    })
-
-    it('returns an error when the name has a null character', () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      const result = sequelize.validateSegmentName('\0test')
-
-      expect(result).to.be.instanceOf(Error)
-    })
-
-    it('returns null when there aren\'t any errors', () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      const result = sequelize.validateSegmentName('valid')
-
-      expect(result).to.not.be.instanceOf(Error)
-      expect(result).to.equal(null)
-    })
-  })
-
-  describe('get()', () => {
-    it('returns a promise that rejects when the connection is closed', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      try {
-        await sequelize.get('test')
-      } catch (err) {
-        expect(err.message).to.equal('Connection not started')
-      }
-    })
-
-    it('returns a promise that rejects when there is an error returned from getting an item', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
-        get: function (item) {
-          return Promise.reject(Error())
+    describe('validateSegmentName()', () => {
+      it('returns an error when the name is empty', () => {
+        const options = {
+          url: DB
         }
-      }
 
-      await expect(sequelize.get('test')).to.reject()
-    })
+        const sequelize = new CatboxSequelize(options)
 
-    it('returns a promise that rejects when there is an error parsing the result', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
+        const result = sequelize.validateSegmentName('')
 
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
+        expect(result).to.be.instanceOf(Error)
+        expect(result.message).to.equal('Empty string')
+      })
 
-        get: function (item) {
-          return Promise.resolve('test')
+      it('returns an error when the name has a null character', () => {
+        const options = {
+          url: DB
         }
-      }
 
-      await expect(sequelize.get('test')).to.reject(Error, 'Bad envelope content')
-    })
+        const sequelize = new CatboxSequelize(options)
 
-    it('returns a promise that rejects when there is an error with the envelope structure (stored)', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
+        const result = sequelize.validateSegmentName('\0test')
 
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
-        get: function (item) {
-          return Promise.resolve('{ "item": "false" }')
+        expect(result).to.be.instanceOf(Error)
+      })
+
+      it('returns null when there aren\'t any errors', () => {
+        const options = {
+          url: DB
         }
-      }
 
-      await expect(sequelize.get('test')).to.reject(Error, 'Incorrect envelope structure')
+        const sequelize = new CatboxSequelize(options)
+
+        const result = sequelize.validateSegmentName('valid')
+
+        expect(result).to.not.be.instanceOf(Error)
+        expect(result).to.equal(null)
+      })
     })
 
-    it('returns a promise that rejects when there is an error with the envelope structure (item)', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
-        get: function (item) {
-          return Promise.resolve('{ "stored": "123" }')
+    describe('get()', () => {
+      it('returns a promise that rejects when the connection is closed', async () => {
+        const options = {
+          url: DB
         }
-      }
 
-      await expect(sequelize.get('test')).to.reject(Error, 'Incorrect envelope structure')
-    })
+        const sequelize = new CatboxSequelize(options)
 
-    it('is able to retrieve an object thats stored when connection is started', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        partition: 'wwwtest'
-      }
-      const key = {
-        id: 'test',
-        segment: 'test'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      await sequelize.start()
-      await sequelize.set(key, 'myvalue', 200)
-      const result = await sequelize.get(key)
-      expect(result.item).to.equal('myvalue')
-    })
-
-    it('returns null when unable to find the item', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        partition: 'wwwtest'
-      }
-      const key = {
-        id: 'notfound',
-        segment: 'notfound'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      await sequelize.start()
-      const result = await sequelize.get(key)
-      expect(result).to.not.exist()
-    })
-
-    it('can store and retrieve falsy values such as int 0', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        partition: 'wwwtest'
-      }
-      const key = {
-        id: 'test',
-        segment: 'test'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      await sequelize.start()
-      await sequelize.set(key, 0, 200)
-      const result = await sequelize.get(key)
-      expect(result.item).to.equal(0)
-    })
-
-    it('can store and retrieve falsy values such as boolean false', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379,
-        partition: 'wwwtest'
-      }
-      const key = {
-        id: 'test',
-        segment: 'test'
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      await sequelize.start()
-      await sequelize.set(key, false, 200)
-      const result = await sequelize.get(key)
-      expect(result.item).to.equal(false)
-    })
-  })
-
-  describe('set()', () => {
-    it('returns a promise that rejects when the connection is closed', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      try {
-        await sequelize.set('test1', 'test1', 3600)
-      } catch (err) {
-        expect(err.message).to.equal('Connection not started')
-      }
-    })
-
-    it('returns a promise that rejects when there is an error returned from setting an item', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
-        set: function (key, item, callback) {
-          return Promise.reject(Error())
+        try {
+          await sequelize.get('test')
+        } catch (err) {
+          expect(err.message).to.equal('Connection not started')
         }
-      }
+      })
 
-      await expect(sequelize.set('test', 'test', 3600)).to.reject()
-    })
-  })
-
-  describe('drop()', () => {
-    it('returns a promise that rejects when the connection is closed', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-
-      try {
-        await sequelize.drop('test2')
-      } catch (err) {
-        expect(err.message).to.equal('Connection not started')
-      }
-    })
-
-    it('deletes the item from sequelize', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
-
-      const sequelize = new CatboxSequelize(options)
-      sequelize.client = {
-        del: function (key) {
-          return Promise.resolve(null)
+      it('returns a promise that rejects when there is an error returned from getting an item', async () => {
+        const options = {
+          url: DB
         }
-      }
 
-      await sequelize.drop('test')
+        const sequelize = new CatboxSequelize(options)
+        sequelize.model = {
+          findOne: function (item) {
+            return Promise.reject(Error())
+          }
+        }
+
+        await expect(sequelize.get('test')).to.reject()
+      })
+
+      it('is able to retrieve an object thats stored when connection is started', async () => {
+        const options = {
+          url: DB,
+          partition: 'wwwtest'
+        }
+        const key = {
+          id: 'test',
+          segment: 'test'
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        await sequelize.start()
+        await sequelize.set(key, 'myvalue', 200)
+        const result = await sequelize.get(key)
+        expect(result.item).to.equal('myvalue')
+      })
+
+      it('returns null when unable to find the item', async () => {
+        const options = {
+          url: DB,
+          partition: 'wwwtest'
+        }
+        const key = {
+          id: 'notfound',
+          segment: 'notfound'
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        await sequelize.start()
+        const result = await sequelize.get(key)
+        expect(result).to.not.exist()
+      })
+
+      it('can store and retrieve falsy values such as int 0', async () => {
+        const options = {
+          url: DB,
+          partition: 'wwwtest'
+        }
+        const key = {
+          id: 'test',
+          segment: 'test'
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        await sequelize.start()
+        await sequelize.set(key, 0, 200)
+        const result = await sequelize.get(key)
+        expect(result.item).to.equal(0)
+      })
+
+      it('can store and retrieve falsy values such as boolean false', async () => {
+        const options = {
+          url: DB,
+          partition: 'wwwtest'
+        }
+        const key = {
+          id: 'test',
+          segment: 'test'
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        await sequelize.start()
+        await sequelize.set(key, false, 200)
+        const result = await sequelize.get(key)
+        expect(result.item).to.equal(false)
+      })
     })
-  })
 
-  describe('generateKey()', () => {
-    it('generates the storage key from a given catbox key', () => {
-      const options = {
-        partition: 'foo'
-      }
+    describe('set()', () => {
+      it('returns a promise that rejects when the connection is closed', async () => {
+        const options = {
+          url: DB
+        }
 
-      const sequelize = new CatboxSequelize(options)
+        const sequelize = new CatboxSequelize(options)
 
-      const key = {
-        id: 'bar',
-        segment: 'baz'
-      }
+        try {
+          await sequelize.set('test1', 'test1', 3600)
+        } catch (err) {
+          expect(err.message).to.equal('Connection not started')
+        }
+      })
 
-      expect(sequelize.generateKey(key)).to.equal('baz:bar')
+      it('returns a promise that rejects when there is an error returned from setting an item', async () => {
+        const options = {
+          url: DB
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        sequelize.client = {
+          set: function (key, item, callback) {
+            return Promise.reject(Error())
+          }
+        }
+
+        await expect(sequelize.set('test', 'test', 3600)).to.reject()
+      })
     })
 
-    it('generates the storage key from a given catbox key without partition', () => {
-      const options = {}
+    describe('drop()', () => {
+      it('returns a promise that rejects when the connection is closed', async () => {
+        const options = {
+          url: DB
+        }
 
-      const sequelize = new CatboxSequelize(options)
+        const sequelize = new CatboxSequelize(options)
 
-      const key = {
-        id: 'bar',
-        segment: 'baz'
-      }
+        try {
+          await sequelize.drop('test2')
+        } catch (err) {
+          expect(err.message).to.equal('Connection not started')
+        }
+      })
 
-      expect(sequelize.generateKey(key)).to.equal('baz:bar')
+      it('deletes the item from sequelize', async () => {
+        const options = {
+          url: DB
+        }
+
+        const sequelize = new CatboxSequelize(options)
+        sequelize.model = {
+          delete: function (key) {
+            return Promise.resolve(null)
+          }
+        }
+
+        await sequelize.drop('test')
+      })
     })
-  })
 
-  describe('stop()', () => {
-    it('sets the client to null', async () => {
-      const options = {
-        host: '127.0.0.1',
-        port: 6379
-      }
+    describe('generateKey()', () => {
+      it('generates the storage key from a given catbox key', () => {
+        const options = {
+          partition: 'foo'
+        }
 
-      const sequelize = new CatboxSequelize(options)
+        const sequelize = new CatboxSequelize(options)
 
-      await sequelize.start()
-      expect(sequelize.client).to.exist()
-      await sequelize.stop()
-      expect(sequelize.client).to.not.exist()
+        const key = {
+          id: 'bar',
+          segment: 'baz'
+        }
+
+        expect(sequelize.generateKey(key)).to.equal('baz:bar')
+      })
+
+      it('generates the storage key from a given catbox key without partition', () => {
+        const options = {}
+
+        const sequelize = new CatboxSequelize(options)
+
+        const key = {
+          id: 'bar',
+          segment: 'baz'
+        }
+
+        expect(sequelize.generateKey(key)).to.equal('baz:bar')
+      })
+    })
+
+    describe('stop()', () => {
+      it('sets the client to null', async () => {
+        const sequelize = new CatboxSequelize({url: DB})
+
+        await sequelize.start()
+        expect(sequelize.sequelize).to.exist()
+        await sequelize.stop()
+        expect(sequelize.sequelize).to.not.exist()
+      })
     })
   })
 })
