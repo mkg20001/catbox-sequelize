@@ -7,7 +7,7 @@ const Hapi = require('@hapi/hapi')
 const Hoek = require('@hapi/hoek')
 const Lab = require('@hapi/lab')
 
-const DB = 'postgres://maciej:test@localhost/agstool'
+const DB = 'postgres://maciej:test@localhost/catbox'
 const Sequelize = require('sequelize')
 
 const { it, describe } = exports.lab = Lab.script()
@@ -284,7 +284,7 @@ describe('Connection', () => {
 
       await expect(sequelize.start()).to.reject()
 
-      expect(sequelize.client).to.not.exist()
+      expect(sequelize.sequelize).to.not.exist()
     })
 
     it('fails in error when auth is not correct', async () => {
@@ -296,7 +296,7 @@ describe('Connection', () => {
 
       await expect(sequelize.start()).to.reject()
 
-      expect(sequelize.client).to.not.exist()
+      expect(sequelize.sequelize).to.not.exist()
     })
 
     it('success when auth is correct', async () => {
@@ -307,7 +307,7 @@ describe('Connection', () => {
       const sequelize = new CatboxSequelize(options)
 
       await sequelize.start()
-      expect(sequelize.client).to.exist()
+      expect(sequelize.sequelize).to.exist()
     })
 
     it('connects via a Sequelize URL when one is provided', async () => {
@@ -318,7 +318,7 @@ describe('Connection', () => {
       const sequelize = new CatboxSequelize(options)
 
       await sequelize.start()
-      expect(sequelize.client).to.exist()
+      expect(sequelize.sequelize).to.exist()
     })
 
     describe('isReady()', () => {
@@ -330,7 +330,7 @@ describe('Connection', () => {
         const sequelize = new CatboxSequelize(options)
 
         await sequelize.start()
-        expect(sequelize.client).to.exist()
+        expect(sequelize.sequelize).to.exist()
         expect(sequelize.isReady()).to.equal(true)
         await sequelize.stop()
       })
@@ -343,7 +343,7 @@ describe('Connection', () => {
         const sequelize = new CatboxSequelize(options)
 
         await sequelize.start()
-        expect(sequelize.client).to.exist()
+        expect(sequelize.sequelize).to.exist()
         expect(sequelize.isReady()).to.equal(true)
         await sequelize.stop()
         expect(sequelize.isReady()).to.equal(false)
@@ -509,7 +509,7 @@ describe('Connection', () => {
         }
 
         const sequelize = new CatboxSequelize(options)
-        sequelize.client = {
+        sequelize.sequelize = {
           set: function (key, item, callback) {
             return Promise.reject(Error())
           }
