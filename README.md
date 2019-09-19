@@ -11,6 +11,7 @@ The connection can be specified with one (and only one) of:
 - `sequelize` - a custom Sequelize client instance where `sequelize` must:
   - be manually started and stopped,
   - manually synced
+  - not already synced
 
 - `url` - a Sequelize server URL.
 
@@ -29,6 +30,25 @@ const CatboxSequelize = require('catbox-sequelize');
 
 const cache = new Catbox.Client(CatboxRedis, {
   partition : 'my_catbox_cache'
-  url: ''
+  url: 'postgres://user:pass@example.com:5432/dbname'
 });
+```
+
+When used in a hapi server (hapi version 18 or newer):
+
+```js
+const Hapi = require('hapi')
+const CatboxSequelize = require('catbox-sequelize');
+
+const server = new Hapi.Server({
+  cache: [
+    {
+      name: 'my_cache',
+      provider: {
+        constructor: CatboxSequelize,
+        url: 'postgres://user:pass@example.com:5432/dbname'
+      }
+    }
+  ]
+})
 ```
